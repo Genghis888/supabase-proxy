@@ -16,8 +16,8 @@
 <h2>⏱️ Configurações</h2>
 <div class="form-row">
   <div class="field">
-    <label>Horas para buscar visitantes</label>
-    <input type="number" id="horas" min="1" max="48" value="2">
+    <label>Segundos por nome (marquee)</label>
+    <input type="number" id="vel" min="1" max="10" value="3" step="0.5">
   </div>
   <div class="field">
     <label>Local de referência</label>
@@ -30,8 +30,8 @@
     <input type="number" id="segDj" min="5" max="300" value="30">
   </div>
   <div class="field">
-    <label>Segundos: Visitantes</label>
-    <input type="number" id="segVis" min="5" max="300" value="30">
+    <label>Horas para buscar (Supabase)</label>
+    <input type="number" id="horas" min="1" max="48" value="2">
   </div>
 </div>
 </div>
@@ -166,7 +166,7 @@ function remover(index) {
 function salvarLista() {
   const local = document.getElementById('local').value.trim();
   const segDj = +(document.getElementById('segDj').value || 30);
-  const segVis = +(document.getElementById('segVis').value || 30);
+  const vel = +(document.getElementById('vel').value || 3);
   const horas = +(document.getElementById('horas').value || 2);
   const agora = new Date().toISOString();
 
@@ -174,7 +174,7 @@ function salvarLista() {
     local: local,
     horas: horas,
     segDj: segDj,
-    segVis: segVis,
+    vel: vel,
     atualizado_em: agora,
     visitantes: visitantes.map(v => ({
       nome: v.nome,
@@ -199,10 +199,12 @@ function salvarLista() {
 function gerarLink() {
   const local = document.getElementById('local').value.trim();
   const segDj = document.getElementById('segDj').value;
+  const vel = document.getElementById('vel').value;
 
   const params = new URLSearchParams();
   params.set('loc', local);
   params.set('dj', segDj);
+  params.set('vel', vel);
 
   const link = NEOCITIES_URL + '?' + params.toString();
   document.getElementById('linkBox').textContent = link;

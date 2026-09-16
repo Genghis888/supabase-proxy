@@ -1,5 +1,7 @@
 {
   "local": "Clube do Rock",
+  "segDj": 30,
+  "vel": 3,
   "atualizado_em": "2026-09-15T22:30:00.000Z",
   "visitantes": [
     {
