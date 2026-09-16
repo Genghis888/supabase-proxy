@@ -103,7 +103,7 @@ app.get('/api/visitors', async (req, res) => {
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', supabase: !!SUPABASE_URL });
+  res.json({ status: 'ok', supabase: !!SUPABASE_URL, version: '1.1' });
 });
 
 app.listen(PORT, () => {
