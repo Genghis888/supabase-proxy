@@ -338,7 +338,7 @@ body {
 
 .welcome-marquee-inner {
   display: inline-block;
-  animation: marqueeScroll 20s linear infinite;
+  will-change: transform;
 }
 
 .welcome-marquee-inner .name {
@@ -347,11 +347,6 @@ body {
   color: #fff;
   margin: 0 30px;
   text-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
-}
-
-@keyframes marqueeScroll {
-  0% { transform: translateX(100vw); }
-  100% { transform: translateX(-100%); }
 }
 
 .welcome-location {
