@@ -109,3 +109,20 @@ app.get('/api/health', (req, res) => {
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
+
+// ==================== AUTO-PING (manter Render ativo) ====================
+// Render free tier fica inativo após 15 min sem tráfego
+// Este ping a cada 10 minutos mantém o serviço vivo
+const SELF_URL = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
+
+setInterval(async () => {
+  try {
+    const res = await fetch(SELF_URL + '/api/health');
+    const data = await res.json();
+    console.log('[PING] Servidor ativo:', data.status);
+  } catch (e) {
+    console.log('[PING] Erro:', e.message);
+  }
+}, 10 * 60 * 1000); // A cada 10 minutos
+
+console.log('[PING] Auto-ping configurado a cada 10 minutos');
