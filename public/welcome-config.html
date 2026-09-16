@@ -165,10 +165,16 @@ function remover(index) {
 // ==================== SALVAR LISTA ====================
 function salvarLista() {
   const local = document.getElementById('local').value.trim();
+  const segDj = +(document.getElementById('segDj').value || 30);
+  const segVis = +(document.getElementById('segVis').value || 30);
+  const horas = +(document.getElementById('horas').value || 2);
   const agora = new Date().toISOString();
 
   const objeto = {
     local: local,
+    horas: horas,
+    segDj: segDj,
+    segVis: segVis,
     atualizado_em: agora,
     visitantes: visitantes.map(v => ({
       nome: v.nome,
