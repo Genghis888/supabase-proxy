@@ -1,0 +1,21 @@
+{
+  "local": "Clube do Rock",
+  "atualizado_em": "2026-09-15T22:30:00.000Z",
+  "visitantes": [
+    {
+      "nome": "Maria",
+      "id": "900900900",
+      "local": "Clube do Rock"
+    },
+    {
+      "nome": "João",
+      "id": "888888888",
+      "local": "Clube do Rock"
+    },
+    {
+      "nome": "Ana",
+      "id": "666666666",
+      "local": "Clube do Rock"
+    }
+  ]
+}

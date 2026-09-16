@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Config - Painel de Visitantes</title>
+<link rel="stylesheet" href="welcome-style.css">
+</head>
+<body class="config-body">
+
+<h1>⚙️ Configuração - Painel de Visitantes</h1>
+<p class="sub">Configure, visualize e exporte a lista de visitantes presentes</p>
+
+<!-- CONFIGURAÇÕES -->
+<div class="card">
+<h2>⏱️ Configurações</h2>
+<div class="form-row">
+  <div class="field">
+    <label>Horas para buscar visitantes</label>
+    <input type="number" id="horas" min="1" max="48" value="2">
+  </div>
+  <div class="field">
+    <label>Local de referência</label>
+    <input type="text" id="local" value="Clube do Rock" placeholder="Ex: Clube do Rock">
+  </div>
+</div>
+<div class="form-row">
+  <div class="field">
+    <label>Segundos: Painel DJs</label>
+    <input type="number" id="segDj" min="5" max="300" value="30">
+  </div>
+  <div class="field">
+    <label>Segundos: Visitantes</label>
+    <input type="number" id="segVis" min="5" max="300" value="30">
+  </div>
+</div>
+</div>
+
+<!-- FETCH SUPABASE -->
+<div class="card">
+<h2>🔄 Buscar Visitantes do Supabase</h2>
+<div id="msg"></div>
+<div class="actions">
+  <button class="btn btn-primary" onclick="buscarVisitantes()">🔄 Atualizar Lista do Supabase</button>
+</div>
+</div>
+
+<!-- LISTA DE VISITANTES -->
+<div class="card">
+<h2>👥 Visitantes Encontrados</h2>
+<div id="stats"></div>
+<ul class="visitor-list" id="visitorList">
+  <li class="empty-state">
+    <div class="icon">📭</div>
+    <div>Nenhum visitante carregado.<br>Clique em "Atualizar Lista do Supabase".</div>
+  </li>
+</ul>
+<div class="actions">
+  <button class="btn btn-success" onclick="salvarLista()" id="btnSalvar" disabled>💾 Salvar Lista (presentes.json)</button>
+</div>
+</div>
+
+<!-- LINK DO PAINEL -->
+<div class="card">
+<h2>🔗 Link do Painel</h2>
+<p class="sub">O painel de exibição continua no Neocities</p>
+<div class="link-box" id="linkBox">Configure os parâmetros e clique em "Gerar Link"</div>
+<div class="actions">
+  <button class="btn btn-secondary" onclick="gerarLink()">🔗 Gerar Link</button>
+  <button class="btn btn-secondary" onclick="copiarLink()">📋 Copiar Link</button>
+  <button class="btn btn-primary" onclick="abrirPainel()">👁️ Abrir Painel</button>
+</div>
+</div>
+
+<!-- SCRIPTS -->
+<script>
+
+// ==================== CONFIGURAÇÕES ====================
+// URL do painel no Neocities (para gerar o link)
+const NEOCITIES_URL = 'https://baixocidade.neocities.org/painel-djs/visitantes/welcome.html';
+
+let visitantes = [];
+
+// ==================== BUSCAR VISITANTES ====================
+async function buscarVisitantes() {
+  const horas = +(document.getElementById('horas').value || 2);
+  const local = document.getElementById('local').value.trim();
+  const msgEl = document.getElementById('msg');
+
+  if (!local) {
+    msgEl.innerHTML = '<div class="error-msg">Informe o local de referência.</div>';
+    return;
+  }
+
+  msgEl.innerHTML = '<div class="loading">Buscando visitantes...</div>';
+  document.getElementById('btnSalvar').disabled = true;
+
+  try {
+    // Requisição relativa ao mesmo servidor (Render)
+    const url = '/api/visitors?hours=' + horas + '&local=' + encodeURIComponent(local);
+    const res = await fetch(url);
+    const json = await res.json();
+
+    if (!res.ok) {
+      console.error('Erro proxy:', json);
+      msgEl.innerHTML = '<div class="error-msg">Erro ao buscar dados: ' + (json.error || 'Erro desconhecido') + '</div>';
+      return;
+    }
+
+    if (!json.visitantes || json.visitantes.length === 0) {
+      msgEl.innerHTML = '<div class="error-msg">Nenhum visitante encontrado. Registros brutos: ' + (json.total_bruto || 0) + '</div>';
+      visitantes = [];
+      renderizarLista();
+      return;
+    }
+
+    visitantes = json.visitantes;
+    msgEl.innerHTML = '<div class="success-msg">✅ ' + visitantes.length + ' visitante(s) encontrado(s) de ' + json.total_bruto + ' registro(s) brutos. Remova quem saiu e salve a lista.</div>';
+    renderizarLista();
+
+  } catch (e) {
+    console.error('Erro:', e);
+    msgEl.innerHTML = '<div class="error-msg">Erro inesperado: ' + e.message + '</div>';
+  }
+}
+
+// ==================== RENDERIZAR LISTA ====================
+function renderizarLista() {
+  const ul = document.getElementById('visitorList');
+  const statsEl = document.getElementById('stats');
+  const btnSalvar = document.getElementById('btnSalvar');
+
+  if (visitantes.length === 0) {
+    ul.innerHTML = '<li class="empty-state"><div class="icon">📭</div><div>Nenhum visitante encontrado.</div></li>';
+    statsEl.innerHTML = '';
+    btnSalvar.disabled = true;
+    return;
+  }
+
+  btnSalvar.disabled = false;
+
+  statsEl.innerHTML =
+    '<div class="stats">' +
+    '<div class="stat-box"><div class="stat-value">' + visitantes.length + '</div><div class="stat-label">Presentes</div></div>' +
+    '</div>';
+
+  ul.innerHTML = visitantes.map((v, i) =>
+    '<li class="visitor-item">' +
+      '<div class="visitor-info">' +
+        '<span class="visitor-name">🎮 ' + escapeHtml(v.nome) + '</span>' +
+        '<span class="visitor-id">ID: ' + escapeHtml(v.id) + '</span>' +
+        '<span class="visitor-local">' + escapeHtml(v.local) + '</span>' +
+      '</div>' +
+      '<button class="visitor-remove" onclick="remover(' + i + ')" title="Remover">X</button>' +
+    '</li>'
+  ).join('');
+}
+
+// ==================== REMOVER ====================
+function remover(index) {
+  visitantes.splice(index, 1);
+  renderizarLista();
+}
+
+// ==================== SALVAR LISTA ====================
+function salvarLista() {
+  const local = document.getElementById('local').value.trim();
+  const agora = new Date().toISOString();
+
+  const objeto = {
+    local: local,
+    atualizado_em: agora,
+    visitantes: visitantes.map(v => ({
+      nome: v.nome,
+      id: v.id,
+      local: v.local
+    }))
+  };
+
+  const json = JSON.stringify(objeto, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'presentes.json';
+  a.click();
+
+  URL.revokeObjectURL(url);
+}
+
+// ==================== GERAR LINK ====================
+function gerarLink() {
+  const horas = document.getElementById('horas').value;
+  const local = document.getElementById('local').value.trim();
+  const segDj = document.getElementById('segDj').value;
+  const segVis = document.getElementById('segVis').value;
+
+  const params = new URLSearchParams();
+  params.set('t', horas);
+  params.set('loc', local);
+  params.set('dj', segDj);
+  params.set('vis', segVis);
+
+  const link = NEOCITIES_URL + '?' + params.toString();
+  document.getElementById('linkBox').textContent = link;
+}
+
+// ==================== COPIAR LINK ====================
+function copiarLink() {
+  const link = document.getElementById('linkBox').textContent;
+  if (!link || link.includes('Configure')) return;
+  navigator.clipboard.writeText(link);
+}
+
+// ==================== ABRIR PAINEL ====================
+function abrirPainel() {
+  const link = document.getElementById('linkBox').textContent;
+  if (!link || link.includes('Configure')) return;
+  window.open(link, '_blank');
+}
+
+// ==================== HELPERS ====================
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// ==================== INIT ====================
+gerarLink();
+</script>
+</body>
+</html>
