@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Config - Painel de Visitantes</title>
-<link rel="stylesheet" href="welcome-style.css">
+<link rel="stylesheet" href="../render-backup/public/welcome-style.css">
 </head>
 <body class="config-body">
 
@@ -45,6 +45,34 @@
 </div>
 </div>
 
+<!-- IMPORTAR JSON -->
+<div class="card">
+<h2>📥 Importar JSON Existente</h2>
+<p class="sub">Carregue um presentes.json já existente para editar</p>
+<div class="actions">
+  <input type="file" id="importInput" accept=".json" style="display:none" onchange="importarJSON(event)">
+  <button class="btn btn-secondary" onclick="document.getElementById('importInput').click()">📁 Importar presentes.json</button>
+</div>
+</div>
+
+<!-- ADICIONAR VISITANTE -->
+<div class="card">
+<h2>➕ Adicionar Visitante Manualmente</h2>
+<div class="form-row">
+  <div class="field">
+    <label>Nome</label>
+    <input type="text" id="addNome" placeholder="Nome do visitante">
+  </div>
+  <div class="field">
+    <label>ID</label>
+    <input type="text" id="addId" placeholder="ID (opcional)">
+  </div>
+</div>
+<div class="actions">
+  <button class="btn btn-success" onclick="adicionarVisitante()">➕ Adicionar à Lista</button>
+</div>
+</div>
+
 <!-- LISTA DE VISITANTES -->
 <div class="card">
 <h2>👥 Visitantes Encontrados</h2>
@@ -52,7 +80,7 @@
 <ul class="visitor-list" id="visitorList">
   <li class="empty-state">
     <div class="icon">📭</div>
-    <div>Nenhum visitante carregado.<br>Clique em "Atualizar Lista do Supabase".</div>
+    <div>Nenhum visitante carregado.<br>Clique em "Atualizar Lista do Supabase" ou importe um JSON.</div>
   </li>
 </ul>
 <div class="actions">
@@ -76,10 +104,67 @@
 <script>
 
 // ==================== CONFIGURAÇÕES ====================
-// URL do painel no Neocities (para gerar o link)
 const NEOCITIES_URL = 'https://baixocidade.neocities.org/painel-djs/visitantes/welcome.html';
 
 let visitantes = [];
+
+// ==================== IMPORTAR JSON ====================
+function importarJSON(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      
+      if (data.visitantes && Array.isArray(data.visitantes)) {
+        visitantes = data.visitantes;
+        
+        if (data.local) document.getElementById('local').value = data.local;
+        if (data.segDj) document.getElementById('segDj').value = data.segDj;
+        if (data.vel) document.getElementById('vel').value = data.vel;
+        if (data.horas) document.getElementById('horas').value = data.horas;
+        
+        renderizarLista();
+        document.getElementById('msg').innerHTML = '<div class="success-msg">✅ JSON importado com sucesso! ' + visitantes.length + ' visitante(s) carregado(s).</div>';
+      } else {
+        document.getElementById('msg').innerHTML = '<div class="error-msg">❌ Formato inválido. O JSON deve conter um array "visitantes".</div>';
+      }
+    } catch (err) {
+      document.getElementById('msg').innerHTML = '<div class="error-msg">❌ Erro ao ler JSON: ' + err.message + '</div>';
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// ==================== ADICIONAR VISITANTE ====================
+function adicionarVisitante() {
+  const nome = document.getElementById('addNome').value.trim();
+  const id = document.getElementById('addId').value.trim();
+  const local = document.getElementById('local').value.trim();
+  const msgEl = document.getElementById('msg');
+
+  if (!nome) {
+    msgEl.innerHTML = '<div class="error-msg">Informe o nome do visitante.</div>';
+    return;
+  }
+
+  const novoVisitante = {
+    nome: nome,
+    id: id || 'MANUAL_' + Date.now(),
+    local: local || 'N/A'
+  };
+
+  visitantes.push(novoVisitante);
+  
+  document.getElementById('addNome').value = '';
+  document.getElementById('addId').value = '';
+  
+  renderizarLista();
+  msgEl.innerHTML = '<div class="success-msg">✅ ' + escapeHtml(nome) + ' adicionado(a) com sucesso!</div>';
+}
 
 // ==================== BUSCAR VISITANTES ====================
 async function buscarVisitantes() {
@@ -96,7 +181,6 @@ async function buscarVisitantes() {
   document.getElementById('btnSalvar').disabled = true;
 
   try {
-    // Requisição relativa ao mesmo servidor (Render)
     const url = '/api/visitors?hours=' + horas + '&local=' + encodeURIComponent(local);
     const res = await fetch(url);
     const json = await res.json();
@@ -236,3 +320,4 @@ gerarLink();
 </script>
 </body>
 </html>
+
